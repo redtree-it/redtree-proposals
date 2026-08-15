@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum BlockCategory {
+  INTRODUCTION
+  EXPERIENCE
+  VALUES
+  EXPERTISE
+  ONBOARDING
+  TESTIMONIALS
+  LEGAL
+  NEXT_STEPS
+  OTHER
+}
+
+enum UnitType {
+  PER_USER
+  PER_DEVICE
+  FIXED
+}
+
+enum PriceCategory {
+  CORE
+  PHASE_2
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum ActivityAction {
+  CREATED
+  EDITED
+  STATUS_CHANGED
+  EXPORTED
+  DUPLICATED
+}
+
+model User {
+  id               String                @id @default(cuid())
+  email            String                @unique
+  passwordHash     String
+  name             String
+  role             Role                  @default(USER)
+  createdAt        DateTime              @default(now())
+  sessions         Session[]
+  activities       ProposalActivity[]
+  blockVersions    ContentBlockVersion[]
+  proposalsCreated Proposal[]            @relation("ProposalCreatedBy")
+  exports          ProposalExport[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Client {
+  id          String     @id @default(cuid())
+  name        String
+  contactName String?
+  email       String?
+  sector      String?
+  userCount   Int?
+  deviceCount Int?
+  notes       String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  proposals   Proposal[]
+}
+
+model ContentBlock {
+  id               String                @id @default(cuid())
+  title            String
+  category         BlockCategory
+  sortOrder        Int                   @default(0)
+  active           Boolean               @default(true)
+  currentVersionId String?               @unique
+  currentVersion   ContentBlockVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  versions         ContentBlockVersion[] @relation("BlockVersions")
+  templateBlocks   TemplateBlock[]
+  proposalBlocks   ProposalBlock[]
+  createdAt        DateTime              @default(now())
+}
+
+// bodyMarkdown: minimal markdown subset only — paragraphs, **bold**, "- " bullet lines.
+// Deliberately not a full rich-text JSON model, per "keep the editor simple".
+model ContentBlockVersion {
+  id             String          @id @default(cuid())
+  blockId        String
+  block          ContentBlock    @relation("BlockVersions", fields: [blockId], references: [id], onDelete: Cascade)
+  versionNo      Int
+  bodyMarkdown   String
+  createdAt      DateTime        @default(now())
+  createdById    String
+  createdBy      User            @relation(fields: [createdById], references: [id])
+  currentFor     ContentBlock?   @relation("CurrentVersion")
+  proposalBlocks ProposalBlock[]
+
+  @@unique([blockId, versionNo])
+}
+
+model PriceBookItem {
+  id              String                @id @default(cuid())
+  name            String
+  description     String?
+  unitPricePence  Int
+  unitType        UnitType
+  category        PriceCategory         @default(CORE)
+  defaultIncluded Boolean               @default(true)
+  active          Boolean               @default(true)
+  sortOrder       Int                   @default(0)
+  createdAt       DateTime              @default(now())
+  pricingLines    ProposalPricingLine[]
+}
+
+model Template {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  active      Boolean         @default(true)
+  blocks      TemplateBlock[]
+  proposals   Proposal[]
+  createdAt   DateTime        @default(now())
+}
+
+model TemplateBlock {
+  id         String       @id @default(cuid())
+  templateId String
+  template   Template     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  blockId    String
+  block      ContentBlock @relation(fields: [blockId], references: [id])
+  sortOrder  Int
+
+  @@unique([templateId, blockId])
+}
+
+model Proposal {
+  id              String         @id @default(cuid())
+  clientId        String
+  client          Client         @relation(fields: [clientId], references: [id])
+  title           String
+  status          ProposalStatus @default(DRAFT)
+  templateId      String?
+  template        Template?      @relation(fields: [templateId], references: [id])
+  whatWeHeard     String?
+  recommendation  String?
+  validUntil      DateTime?
+  vatNoteOverride String?
+  createdById     String
+  createdBy       User           @relation("ProposalCreatedBy", fields: [createdById], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  requirements ProposalRequirement[]
+  blocks       ProposalBlock[]
+  pricingLines ProposalPricingLine[]
+  activities   ProposalActivity[]
+  exports      ProposalExport[]
+}
+
+model ProposalRequirement {
+  id          String   @id @default(cuid())
+  proposalId  String
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  requirement String
+  delivery    String
+  sortOrder   Int
+}
+
+// Proposal-local copy of a block's content at the moment it was added.
+// Editing here (overridden=true) never touches the shared library block.
+model ProposalBlock {
+  id              String               @id @default(cuid())
+  proposalId      String
+  proposal        Proposal             @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  sourceBlockId   String?
+  sourceBlock     ContentBlock?        @relation(fields: [sourceBlockId], references: [id])
+  sourceVersionId String?
+  sourceVersion   ContentBlockVersion? @relation(fields: [sourceVersionId], references: [id])
+  title           String
+  bodyMarkdown    String
+  overridden      Boolean              @default(false)
+  sortOrder       Int
+}
+
+model ProposalPricingLine {
+  id              String         @id @default(cuid())
+  proposalId      String
+  proposal        Proposal       @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  priceBookItemId String?
+  priceBookItem   PriceBookItem? @relation(fields: [priceBookItemId], references: [id])
+  name            String
+  description     String?
+  unitPricePence  Int
+  unitType        UnitType
+  quantity        Int
+  category        PriceCategory  @default(CORE)
+  optional        Boolean        @default(false)
+  sortOrder       Int
+}
+
+model ProposalActivity {
+  id         String         @id @default(cuid())
+  proposalId String
+  proposal   Proposal       @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User           @relation(fields: [userId], references: [id])
+  action     ActivityAction
+  detail     String?
+  createdAt  DateTime       @default(now())
+}
+
+model ProposalExport {
+  id          String   @id @default(cuid())
+  proposalId  String
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  versionNo   Int
+  filename    String
+  filePath    String
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([proposalId, versionNo])
+}
+
+model CompanySettings {
+  id                  String  @id @default("singleton")
+  companyName         String  @default("Redtree IT Limited")
+  addressLine         String  @default("Ashwood House / 66 Cardiff Road / Glan Y Llyn / Taffs Well / Cardiff / CF15 7QE")
+  phone               String  @default("029 2009 0015")
+  email               String  @default("info@redtree-it.co.uk")
+  website             String  @default("redtree-it.co.uk")
+  logoPath            String?
+  defaultValidityDays Int     @default(30)
+  vatNoteText         String  @default("All prices exclude VAT and are collected on due date by direct debit")
+}

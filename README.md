@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Redtree Proposal Builder
 
-## Getting Started
+A tool for Redtree IT to assemble client proposals from a shared library of reusable content blocks and a price book, then export a branded, editable Word document — replacing the old process of editing a Word proposal in place for each client.
 
-First, run the development server:
+## Stack
+
+- [Next.js](https://nextjs.org) (App Router) + TypeScript, Tailwind CSS 4
+- SQLite via Prisma (driver adapter: `@prisma/adapter-better-sqlite3`)
+- Word generation with the [`docx`](https://github.com/dolanmiu/docx) npm library
+- Email/password auth with server-side sessions (`jose`-signed cookies) — roles: Admin and User
+
+## Local development
+
+Copy `.env.local.example` to `.env.local`, fill in `AUTH_SECRET` (any long random string), then:
 
 ```bash
+npm install
+npx prisma migrate dev
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Demo logins (from the seed script):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `admin@redtree-it.co.uk` / `password123` (Admin)
+- `user@redtree-it.co.uk` / `password123` (User)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Running with Docker
 
-## Learn More
+```bash
+echo "AUTH_SECRET=$(openssl rand -hex 32)" > .env
+docker compose up --build
+```
 
-To learn more about Next.js, take a look at the following resources:
+This builds the app, runs pending migrations and the (idempotent) seed script on every start, and serves it on [http://localhost:3000](http://localhost:3000). The SQLite database, uploaded logo, and generated exports persist in the `redtree_data` Docker volume.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> Note: the Dockerfile and compose file haven't been build-tested against a real Docker daemon in this environment (none was available) — `npm run build` and the migrate/seed steps it runs on startup have been verified directly, but do a first `docker compose up --build` yourself and watch the logs before relying on it.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project layout
 
-## Deploy on Vercel
+- `app/` — routes and pages (App Router); `app/(app)/` is the authenticated shell, `app/api/` is route handlers
+- `lib/` — shared server logic: auth/sessions, merge-field resolution & validation, pricing math, the Word export builder, the shared markdown-subset renderer (used by both the on-screen preview and the export, so they stay in sync)
+- `prisma/` — schema, migrations, and the seed script (content sourced from the real `Managed Service Proposal Template.docx` reference file)
+- `data/` — local persistent storage (SQLite db, uploaded logo, generated exports) — gitignored
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Tests
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm test
+```
+
+Covers pricing math, merge-field resolution/validation (including the cross-client name-mismatch check), and a structural check that generated `.docx` files are well-formed with no leftover unresolved merge tokens.

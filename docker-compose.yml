@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "file:/app/data/dev.db"
+      DATA_DIR: "/app/data"
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in a .env file next to docker-compose.yml}
+    volumes:
+      - redtree_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  redtree_data:

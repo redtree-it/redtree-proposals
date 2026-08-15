@@ -1,0 +1,6 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Must stay LF — read directly by a Linux container's /bin/sh, and a CRLF
+# shebang line breaks the interpreter lookup.
+docker-entrypoint.sh text eol=lf
