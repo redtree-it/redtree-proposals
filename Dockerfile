@@ -8,6 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Build-time only placeholder: `prisma generate` (in npm ci's postinstall) and
+# `next build` (which imports lib/db.ts while collecting page data) both need
+# DATABASE_URL to resolve, even though neither actually connects to it. The
+# real value is supplied at container runtime by Render and overrides this.
+ENV DATABASE_URL="file:./data/dev.db"
+
 COPY . .
 RUN npm ci
 RUN npm run build
