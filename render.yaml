@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: redtree-proposals
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    disk:
+      name: redtree-proposals-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: file:/app/data/dev.db
+      - key: DATA_DIR
+        value: /app/data
+      - key: AUTH_SECRET
+        generateValue: true
