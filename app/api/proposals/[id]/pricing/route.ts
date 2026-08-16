@@ -7,11 +7,12 @@ import {
 } from "@/lib/validation/proposal";
 import { poundsToPence } from "@/lib/validation/price-book";
 import { logActivity } from "@/lib/proposal-activity";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id: proposalId } = await params;
-  const url = new URL(`/proposals/${proposalId}`, request.url);
+  const url = absoluteUrl(request, `/proposals/${proposalId}`);
 
   const formData = await request.formData();
   const source = formData.get("source");

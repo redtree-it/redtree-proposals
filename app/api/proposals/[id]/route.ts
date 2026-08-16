@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { proposalUpdateSchema } from "@/lib/validation/proposal";
 import { logActivity } from "@/lib/proposal-activity";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     vatNoteOverride: formData.get("vatNoteOverride"),
   });
 
-  const url = new URL(`/proposals/${id}`, request.url);
+  const url = absoluteUrl(request, `/proposals/${id}`);
   if (!parsed.success) {
     url.searchParams.set("error", parsed.error.issues[0]?.message ?? "Invalid proposal.");
     return NextResponse.redirect(url, 303);

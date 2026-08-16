@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { pricingLineUpdateSchema } from "@/lib/validation/proposal";
 import { poundsToPence } from "@/lib/validation/price-book";
 import { logActivity } from "@/lib/proposal-activity";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(
   request: NextRequest,
@@ -11,7 +12,7 @@ export async function POST(
 ) {
   const user = await requireUser();
   const { id: proposalId, lineId } = await params;
-  const url = new URL(`/proposals/${proposalId}`, request.url);
+  const url = absoluteUrl(request, `/proposals/${proposalId}`);
 
   const existing = await prisma.proposalPricingLine.findUnique({ where: { id: lineId } });
   if (!existing || existing.proposalId !== proposalId) {

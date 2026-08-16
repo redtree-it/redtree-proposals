@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { poundsToPence, priceBookItemSchema } from "@/lib/validation/price-book";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest) {
   await requireUser();
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     defaultIncluded: formData.get("defaultIncluded") === "on",
   });
 
-  const url = new URL("/price-book", request.url);
+  const url = absoluteUrl(request, "/price-book");
   if (!parsed.success) {
     url.searchParams.set("error", parsed.error.issues[0]?.message ?? "Invalid price book item.");
     return NextResponse.redirect(url, 303);

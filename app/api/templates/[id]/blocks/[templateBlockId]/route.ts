@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(
   request: NextRequest,
@@ -8,7 +9,7 @@ export async function POST(
 ) {
   await requireUser();
   const { id: templateId, templateBlockId } = await params;
-  const url = new URL(`/templates/${templateId}`, request.url);
+  const url = absoluteUrl(request, `/templates/${templateId}`);
 
   const formData = await request.formData();
   const action = formData.get("action");

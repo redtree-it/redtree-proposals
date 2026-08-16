@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { clientSchema } from "@/lib/validation/client";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest) {
   await requireUser();
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     notes: formData.get("notes"),
   });
 
-  const clientsUrl = new URL("/clients", request.url);
+  const clientsUrl = absoluteUrl(request, "/clients");
   if (!parsed.success) {
     clientsUrl.searchParams.set("error", parsed.error.issues[0]?.message ?? "Invalid client details.");
     return NextResponse.redirect(clientsUrl, 303);
@@ -31,5 +32,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id: client.id, name: client.name });
   }
 
-  return NextResponse.redirect(new URL(`/clients/${client.id}`, request.url), 303);
+  return NextResponse.redirect(absoluteUrl(request, `/clients/${client.id}`), 303);
 }

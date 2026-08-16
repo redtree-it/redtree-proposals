@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/proposal-activity";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(
   request: NextRequest,
@@ -9,7 +10,7 @@ export async function POST(
 ) {
   const user = await requireUser();
   const { id: proposalId, requirementId } = await params;
-  const url = new URL(`/proposals/${proposalId}`, request.url);
+  const url = absoluteUrl(request, `/proposals/${proposalId}`);
 
   const existing = await prisma.proposalRequirement.findUnique({ where: { id: requirementId } });
   if (!existing || existing.proposalId !== proposalId) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireUser();
@@ -8,7 +9,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const formData = await request.formData();
   const blockId = formData.get("blockId");
-  const url = new URL(`/templates/${templateId}`, request.url);
+  const url = absoluteUrl(request, `/templates/${templateId}`);
 
   if (typeof blockId !== "string" || !blockId) {
     url.searchParams.set("error", "Choose a block to add.");

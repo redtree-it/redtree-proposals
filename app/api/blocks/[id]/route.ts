@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { blockSchema } from "@/lib/validation/block";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
   const active = formData.get("active") === "on";
 
-  const blockUrl = new URL(`/blocks/${id}`, request.url);
+  const blockUrl = absoluteUrl(request, `/blocks/${id}`);
   if (!parsed.success) {
     blockUrl.searchParams.set("error", parsed.error.issues[0]?.message ?? "Invalid block.");
     return NextResponse.redirect(blockUrl, 303);

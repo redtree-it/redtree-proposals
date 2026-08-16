@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
 import { createSession } from "@/lib/session";
+import { absoluteUrl } from "@/lib/request-url";
 
 const schema = z.object({
   email: z.string().email(),
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     next: formData.get("next") ?? undefined,
   });
 
-  const loginUrl = new URL("/login", request.url);
+  const loginUrl = absoluteUrl(request, "/login");
   if (!parsed.success) {
     loginUrl.searchParams.set("error", "Enter a valid email and password.");
     return NextResponse.redirect(loginUrl, 303);
@@ -41,5 +42,5 @@ export async function POST(request: NextRequest) {
   }
 
   await createSession(user.id);
-  return NextResponse.redirect(new URL(safeNextPath(next), request.url), 303);
+  return NextResponse.redirect(absoluteUrl(request, safeNextPath(next)), 303);
 }

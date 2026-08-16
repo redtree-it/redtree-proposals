@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { logActivity } from "@/lib/proposal-activity";
 import { getCompanySettings } from "@/lib/company-settings";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -66,5 +67,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   await logActivity(copy.id, user.id, "DUPLICATED", `Duplicated from "${source.title}"`);
 
-  return NextResponse.redirect(new URL(`/proposals/${copy.id}`, request.url), 303);
+  return NextResponse.redirect(absoluteUrl(request, `/proposals/${copy.id}`), 303);
 }

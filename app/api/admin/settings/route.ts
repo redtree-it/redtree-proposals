@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { saveUpload, UnsupportedFileTypeError } from "@/lib/uploads";
+import { absoluteUrl } from "@/lib/request-url";
 
 const schema = z.object({
   companyName: z.string().min(1),
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     vatNoteText: formData.get("vatNoteText"),
   });
 
-  const settingsUrl = new URL("/admin/settings", request.url);
+  const settingsUrl = absoluteUrl(request, "/admin/settings");
   if (!parsed.success) {
     settingsUrl.searchParams.set("error", "Please fill in all fields correctly.");
     return NextResponse.redirect(settingsUrl, 303);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { absoluteUrl } from "@/lib/request-url";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -17,12 +18,12 @@ export async function POST(request: NextRequest) {
     description: formData.get("description"),
   });
 
-  const url = new URL("/templates", request.url);
+  const url = absoluteUrl(request, "/templates");
   if (!parsed.success) {
     url.searchParams.set("error", parsed.error.issues[0]?.message ?? "Invalid template.");
     return NextResponse.redirect(url, 303);
   }
 
   const template = await prisma.template.create({ data: parsed.data });
-  return NextResponse.redirect(new URL(`/templates/${template.id}`, request.url), 303);
+  return NextResponse.redirect(absoluteUrl(request, `/templates/${template.id}`), 303);
 }

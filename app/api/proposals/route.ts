@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { proposalCreateSchema } from "@/lib/validation/proposal";
 import { logActivity } from "@/lib/proposal-activity";
 import { getCompanySettings } from "@/lib/company-settings";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest) {
   const user = await requireUser();
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     templateId: formData.get("templateId"),
   });
 
-  const newUrl = new URL("/proposals/new", request.url);
+  const newUrl = absoluteUrl(request, "/proposals/new");
   if (!parsed.success) {
     newUrl.searchParams.set("error", parsed.error.issues[0]?.message ?? "Invalid proposal.");
     return NextResponse.redirect(newUrl, 303);
@@ -60,5 +61,5 @@ export async function POST(request: NextRequest) {
 
   await logActivity(proposal.id, user.id, "CREATED", parsed.data.templateId ? "Created from template" : "Created blank");
 
-  return NextResponse.redirect(new URL(`/proposals/${proposal.id}`, request.url), 303);
+  return NextResponse.redirect(absoluteUrl(request, `/proposals/${proposal.id}`), 303);
 }

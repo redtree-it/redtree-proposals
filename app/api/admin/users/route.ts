@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { hashPassword } from "@/lib/password";
+import { absoluteUrl } from "@/lib/request-url";
 
 const schema = z.object({
   name: z.string().min(1),
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     role: formData.get("role"),
   });
 
-  const usersUrl = new URL("/admin/users", request.url);
+  const usersUrl = absoluteUrl(request, "/admin/users");
   if (!parsed.success) {
     usersUrl.searchParams.set(
       "error",

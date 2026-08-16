@@ -8,6 +8,7 @@ import { buildProposalDocx } from "@/lib/docx/buildProposalDocx";
 import { readUpload } from "@/lib/uploads";
 import { saveExport, sanitizeFilenamePart } from "@/lib/exports";
 import { logActivity } from "@/lib/proposal-activity";
+import { absoluteUrl } from "@/lib/request-url";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const data = await getResolvedProposal(id);
   if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const previewUrl = new URL(`/proposals/${id}/preview`, request.url);
+  const previewUrl = absoluteUrl(request, `/proposals/${id}/preview`);
   if (data.issues.length > 0) {
     previewUrl.searchParams.set("error", "Fix the issues above before exporting.");
     return NextResponse.redirect(previewUrl, 303);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { decryptSessionToken, SESSION_COOKIE } from "@/lib/session";
+import { absoluteUrl } from "@/lib/request-url";
 
 // Optimistic check only (cookie signature verify, no DB hit) — the real
 // enforcement is requireUser()/requireAdmin() in lib/session.ts, called by
@@ -16,7 +17,7 @@ export async function proxy(request: NextRequest) {
   const sessionId = await decryptSessionToken(token);
 
   if (!sessionId) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = absoluteUrl(request, "/login");
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
